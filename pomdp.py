@@ -1,23 +1,23 @@
-'''Loading POMDP environment files and policy files into python objects.
+"""Loading POMDP environment files and policy files into python objects.
    Contains methods to perform POMDP tasks, like finding the optimal
    action and updating the belief.
 
    TODO(mbforbes): Check model after construction to provide sanity
         check for specified pomdp environment (e.g. observation and
         transition probabilities sum to 1.0)
-'''
-
-__author__ = 'mbforbes'
+"""
 
 # XML parsing
-from elementtree.ElementTree import *
+from xml.etree.ElementTree import *
 
 # matrix math
 from numpy import *
 
+__author__ = 'mbforbes'
+
 
 class POMDP:
-    '''
+    """
     Class that a user should interact with. Contains a POMDP environment
     and policy.
 
@@ -25,28 +25,28 @@ class POMDP:
         pomdpenv    POMDPEnvironment
         pomdppolicy POMDPPolicy
         belief      numpy array
-    '''
+    """
     def __init__(self, pomdp_env_filename, pomdp_policy_filename, prior):
-        '''
+        """
         pomdp_env_filename    string
         pomdp_policy_filename string
         prior                 numpy array
-        '''
+        """
         self.pomdpenv = POMDPEnvironment(pomdp_env_filename)
         self.pomdppolicy = POMDPPolicy(pomdp_policy_filename)
         self.belief = prior
 
     def get_action_str(self, action_num):
-        '''
+        """
         Returns a string representing the action with the given num.
         This is the name given to it in the pomdp environment file.
-        '''
+        """
         return self.pomdpenv.actions[action_num]
 
     def get_belief_str(self):
-        '''
+        """
         Returns a string representing the belief.
-        '''
+        """
         res = '['
         for num in self.belief:
             for val in num:
@@ -54,17 +54,17 @@ class POMDP:
         return res[:-2] + ']'
 
     def get_best_action(self):
-        '''
+        """
         Returns tuple (best_action_num,
         expected_reward_for_this_action).
-        '''
+        """
         return self.pomdppolicy.get_best_action(self.belief)
 
     def get_obs_num(self, obs_name):
-        '''
+        """
         Gets the observation number that the observation named obs_name
         corresponds to.
-        '''
+        """
         return self.pomdpenv.observations.index(obs_name)
 
     def update_belief(self, action_num, observation_num):
@@ -72,11 +72,11 @@ class POMDP:
             self.belief, action_num, observation_num)
 
     def belief_dump(self):
-        '''
+        """
         Used for debugging a two state POMDP. Sets the belief to a whole
         bunch of different values and outputs the optimal action for
         each.
-        '''
+        """
         # adjust to change granularity
         increment = 0.01
 
@@ -98,7 +98,7 @@ class POMDP:
 
 class POMDPEnvironment:
     def __init__(self, filename):
-        '''
+        """
         Parses .pomdp file and loads info into this object's fields.
 
         Attributes:
@@ -110,7 +110,7 @@ class POMDPEnvironment:
             T
             Z
             R
-        '''
+        """
         f = open(filename, 'r')
         self.contents = [
             x.strip() for x in f.readlines()
@@ -312,11 +312,11 @@ class POMDPEnvironment:
             raise Exception("Cannot parse line: " + line)
 
     def __get_reward(self, i):
-        '''
+        """
         Wild card * are allowed when specifying a single reward
         probability. They are not allowed when specifying a vector or
         matrix of probabilities.
-        '''
+        """
         line = self.contents[i]
         pieces = [x for x in line.split() if (x.find(':') == -1)]
         action = self.actions.index(pieces[0])
@@ -366,11 +366,11 @@ class POMDPEnvironment:
             raise Exception("Cannot parse line: " + line)
 
     def __reward_ss(self, a, start_state_raw, next_state_raw, obs_raw, prob):
-        '''
+        """
         reward_ss means we're at the start state of the unrolling of the
         reward expression. start_state_raw could be * or the name of the
         real start state.
-        '''
+        """
         if start_state_raw == '*':
             for i in range(len(self.states)):
                 self.__reward_ns(a, i, next_state_raw, obs_raw, prob)
@@ -379,12 +379,12 @@ class POMDPEnvironment:
             self.__reward_ns(a, start_state, next_state_raw, obs_raw, prob)
 
     def __reward_ns(self, a, start_state, next_state_raw, obs_raw, prob):
-        '''
+        """
         reward_ns means we're at the next state of the unrolling of the
         reward expression. start_state is the number of the real start
         state, and next_state_raw could be * or the name of the real
         next state.
-        '''
+        """
         if next_state_raw == '*':
             for i in range(len(self.states)):
                 self.__reward_ob(a, start_state, i, obs_raw, prob)
@@ -393,12 +393,12 @@ class POMDPEnvironment:
             self.__reward_ob(a, start_state, next_state, obs_raw, prob)
 
     def __reward_ob(self, a, start_state, next_state, obs_raw, prob):
-        '''
+        """
         reward_ob means we're at the observation of the unrolling of the
         reward expression. start_state is the number of the real start
         state, next_state is the number of the real next state, and
         obs_raw could be * or the name of the real observation.
-        '''
+        """
         if obs_raw == '*':
             for i in range(len(self.observations)):
                 self.R[(a, start_state, next_state, i)] = prob
@@ -407,7 +407,7 @@ class POMDPEnvironment:
             self.R[(a, start_state, next_state, obs)] = prob
 
     def update_belief(self, prev_belief, action_num, observation_num):
-        '''
+        """
         Note that a POMDPEnvironment doesn't hold beliefs, so this takes
         and returns a belief vector.
 
@@ -415,7 +415,7 @@ class POMDPEnvironment:
         action_num      int
         observation_num int
         return          numpy array
-        '''
+        """
         b_new_nonnormalized = []
         for s_prime in range(len(self.states)):
             p_o_prime = self.Z[(action_num, s_prime, observation_num)]
@@ -423,7 +423,7 @@ class POMDPEnvironment:
             for s in range(len(self.states)):
                 p_s_prime = self.T[(action_num, s, s_prime)]
                 b_s = float(prev_belief[s])
-                summation = summation + p_s_prime * b_s
+                summation += p_s_prime * b_s
             b_new_nonnormalized.append(p_o_prime * summation)
 
         # normalize
@@ -448,7 +448,7 @@ class POMDPEnvironment:
 
 
 class POMDPPolicy:
-    '''
+    """
     Attributes:
         action_nums    The full list of action (numbers) from the alpha
                        vectors. In other words, this saves the action
@@ -457,7 +457,7 @@ class POMDPPolicy:
 
         pMatrix        The policy matrix, constructed from all of the
                        alpha vectors.
-    '''
+    """
     def __init__(self, filename):
         tree = parse(filename)
         root = tree.getroot()
@@ -474,11 +474,11 @@ class POMDPPolicy:
         self.pMatrix = array(val_arrs)
 
     def get_best_action(self, belief):
-        '''
+        """
         Returns tuple:
             (best-action-num, expected-reward-for-this-action).
-        '''
+        """
         res = self.pMatrix.dot(belief)
         highest_expected_reward = res.max()
         best_action = self.action_nums[res.argmax()]
-        return (best_action, highest_expected_reward)
+        return best_action, highest_expected_reward
